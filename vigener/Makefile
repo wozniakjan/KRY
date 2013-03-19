@@ -16,4 +16,4 @@ $(PROJ): $(OBJS)
 	$(CC) $(FLAGS) $(OBJS) -o $(PROJ) 
 
 run: 
-	./kry texabc
+	./kry textextex

@@ -25,13 +25,19 @@ size_t remove_unnecessary(const char* src, char* dst, size_t len){
 
 void find_distances(const char* text, int d, size_t len, map<string, int> &freq){
     int pos = 0;
-    int max_index = len - d;
+    int max_index = len - 2*d;
     string substr;
-    
+    for(int i=0; i<d; i++){
+        substr.append("0");
+    }
+
+    cout << "length:" << len << " max_index:" << max_index << "\n";
+
     for(int pos = 0; pos < max_index; pos++){
         for(int i = 0; i<d; i++){
             substr[i] = text[i+pos];
         }
+        cout << "comparing[" << substr  << "]\n";
         if(freq[substr] == 0){
             freq[substr] = 1;
         }
