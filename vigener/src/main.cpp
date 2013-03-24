@@ -6,6 +6,10 @@
 
 using namespace std;
 
+map<string, int> freq;
+size_t len;
+
+
 size_t remove_unnecessary(const char* src, char* dst, size_t len){
     size_t length = 0;
     int ii = 0;
@@ -23,7 +27,7 @@ size_t remove_unnecessary(const char* src, char* dst, size_t len){
     return ii;
 }
 
-void find_distances(const char* text, int d, size_t len, map<string, int> &freq){
+void find_distances(const char* text, int d){
     int pos = 0;
     int max_index = len - 2*d;
     string substr;
@@ -47,10 +51,10 @@ void find_distances(const char* text, int d, size_t len, map<string, int> &freq)
     }
 }
 
-size_t kaisisky_test(const char* text, size_t len){
+size_t kaisisky_test(const char* text){
     map<string, int>freq;
     for(int i = 3; i < 4; i++){
-        find_distances(text, i, len, freq);
+        find_distances(text, i);
     }
 }
 
@@ -58,9 +62,9 @@ int main(int argc, char* argv[]) {
     size_t length = strlen(argv[1]);
     char* temp = (char*)malloc(sizeof(char)*length);
     
-    length = remove_unnecessary(argv[1], temp, length);
+    len = remove_unnecessary(argv[1], temp, length);
 
-    kaisisky_test(temp, length);
+    kaisisky_test(temp);
 
     free(temp);
     return 0;
