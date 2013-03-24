@@ -23,7 +23,30 @@ size_t remove_unnecessary(const char* src, char* dst, size_t len){
     return ii;
 }
 
-void find_distances(const char* text, int d, size_t len, map<string, int> &freq){
+void find_distances(const char* text, int offset, int d, size_t len, map<string, int> &freq, string str, map<int, int> &count){
+    freq[str] = 1;
+    string substr;
+    for(int i=0; i<d; i++){
+        substr.append("0");
+    }
+    int max_index = len - d, diff;
+
+    for(int pos = d+offset; pos <= max_index; pos++){
+        for(int i = 0; i<d; i++){
+            substr[i] = text[i+pos];
+        }
+        //cout << "comparing:[" << str << ":" << substr << "]";
+        if(str.compare(substr) == 0){
+            freq[str]++;
+            diff = pos-offset;
+            count[diff]++;
+            //cout << " distance: " << diff;
+        }
+        //cout << "\n";
+    }
+}
+
+void find_frequencies(const char* text, int d, size_t len, map<string, int> &freq, map<int, int> &count){
     int pos = 0;
     int max_index = len - 2*d;
     string substr;
@@ -31,26 +54,29 @@ void find_distances(const char* text, int d, size_t len, map<string, int> &freq)
         substr.append("0");
     }
 
-    cout << "length:" << len << " max_index:" << max_index << "\n";
+    //cout << "\nlength:" << len << " max_index:" << max_index << "\n";
 
-    for(int pos = 0; pos < max_index; pos++){
+    for(int pos = 0; pos <= max_index; pos++){
         for(int i = 0; i<d; i++){
             substr[i] = text[i+pos];
         }
-        cout << "comparing[" << substr  << "]\n";
         if(freq[substr] == 0){
-            freq[substr] = 1;
-        }
-        else{
-            cout << "been here[" << substr << "]\n";
+            //cout << "find_distance[" << substr << "]\n";
+            find_distances(text, pos, d, len, freq, substr, count);
         }
     }
 }
 
 size_t kaisisky_test(const char* text, size_t len){
-    map<string, int>freq;
-    for(int i = 3; i < 4; i++){
-        find_distances(text, i, len, freq);
+    map<string, int> freq;
+    map<int, int> count;
+    for(int i = 3; i < 6; i++){
+        find_frequencies(text, i, len, freq, count);
+    }
+
+    cout << "\n\ncounts";
+    for(map<int, int>::iterator i = count.begin(); i != count.end(); ++i){
+        cout << i->first << " " << i->second << "\n";
     }
 }
 
