@@ -17,3 +17,7 @@ $(PROJ): $(OBJS)
 
 run: 
 		./kry < ./sifry/ahoj.txt
+
+clean:
+	rm -rf kry
+	rm -rf main.o

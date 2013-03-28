@@ -13,7 +13,7 @@
 using namespace std;
 
 map<string, int> freq;      //frekvence vyskytu konkretniho stringu
-map<int, int> count;		//pocty vyskytu distances mezi shodnymi stringy
+map<int, int> letter_count;		//pocty vyskytu distances mezi shodnymi stringy
 int letter_freq[ALPH_SIZE]; //frekvence pismen
 size_t len;
 int total_found;
@@ -56,7 +56,7 @@ void find_distances(char* text, int offset, int d, char* str){
         if(equal(str,substr,d)){
             freq[str]++;
             diff = pos-offset;
-            count[diff]++;
+            letter_count[diff]++;
 			total_found++;
             //cout << " distance: " << diff;
         }
@@ -99,7 +99,7 @@ int get_gcd(){
 	map<int, int> divisors;
 	int dist, num; 
 
-	for(map<int, int>::iterator distance = count.begin(); distance != count.end(); distance++){
+	for(map<int, int>::iterator distance = letter_count.begin(); distance != letter_count.end(); distance++){
 		dist = distance->first;
 		num = distance->second;
 		for(int i = 2; i<=dist; i++){
@@ -119,7 +119,7 @@ int get_gcd(){
 }
 
 double friedman_test(){
-	long long sum = 0;
+	long sum = 0;
 	double N = len*(len-1);
 	for(int i = 0; i<ALPH_SIZE; i++){
 		sum += letter_freq[i]*(letter_freq[i]-1); 	
