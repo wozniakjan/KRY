@@ -1,9 +1,15 @@
+/**
+ * 1. projekt do predmetu KRY - Vigenerova sifra
+ * autor: xwozni00, Jan Wozniak
+ */
+
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <map>
 #include <string>
 
+//Konstanty
 #define MIN_GRAM 3
 #define MAX_GRAM 5
 #define ALPH_SIZE 26 
@@ -13,11 +19,12 @@
 using namespace std;
 
 map<string, int> freq;      //frekvence vyskytu konkretniho stringu
-map<int, int> letter_count;		//pocty vyskytu distances mezi shodnymi stringy
+map<int, int> letter_count; //pocty vyskytu distances mezi shodnymi stringy
 int letter_freq[ALPH_SIZE]; //frekvence pismen
-size_t len;
-int total_found;
+size_t len;                 //delka zpracovavaneho textu
+int total_found=0;          //TODO zjisti z githubu, kde jsem jeden vyskyt smazal
 
+//pravdepodobnost vyskytu pismen anglicke abecedy v anglickem textu
 float letter_table[ALPH_SIZE] = {
     0.08167, 0.01492, 0.02782, 0.04253, 0.12702, 0.02228, 
     0.02015, 0.06094, 0.06966, 0.00153, 0.00772, 0.04025, 
@@ -26,11 +33,18 @@ float letter_table[ALPH_SIZE] = {
     0.01974, 0.00074 
 };
 
-
-size_t remove_unnecessary(const char* src, char* dst, size_t len){
+/*
+ * Smaze prebytecne znaky a konvertuje na lower-case
+ *
+ * @param src - zdrojovy text
+ * @param dst - upraveny retezec
+ * @param len - delka
+ * @return velikost upraveneho textu
+ */
+size_t remove_unnecessary(const char* src, char* dst, size_t len2){
     size_t length = 0;
     int ii = 0;
-    for(int i = 0; i<len; i++){
+    for(int i = 0; i<len2; i++){
         if(src[i] >= 'a' && src[i] <= 'z'){
             dst[ii] = src[i];
             ii++;
@@ -44,6 +58,14 @@ size_t remove_unnecessary(const char* src, char* dst, size_t len){
     return ii;
 }
 
+/* 
+ * Porovnani podretezcu na shodnost
+ *
+ * @param s1 - referencni podretezec
+ * @param s2 - kontrolovany podretezec
+ * @param len - delka podretezce
+ * @return true pokud jsou si rovny, jinak false
+ */
 bool equal(char* s1, char* s2, int len){
     for(int i=0; i<len; i++){
         if(s1[i] != s2[i]){
@@ -53,6 +75,14 @@ bool equal(char* s1, char* s2, int len){
     return true;
 }
 
+/*
+ * Vyhleda souhlasne podretezce s "text" a jejich vzdalenosti vyskutu ulozi do freq
+ *
+ * @param text - referencni podretezec
+ * @param posun - v sifrovanem textu
+ * @param d - delka podretezce
+ * @param str - zbytek sifrovaneho textu
+ */
 void find_distances(char* text, int offset, int d, char* str){
     freq[str] = 1;
     int max_index = len - d, diff;
@@ -60,49 +90,51 @@ void find_distances(char* text, int offset, int d, char* str){
 
     for(int pos = d+offset; pos <= max_index; pos++){
         substr = text+pos;
-        //cout << "comparing:[" << str << ":" << substr << "]";
         if(equal(str,substr,d)){
             freq[str]++;
             diff = pos-offset;
             letter_count[diff]++;
             total_found++;
-            //cout << " distance: " << diff;
         }
-        //cout << "\n";
     }
 }
 
+/*
+ * Nastavi frekvence vyskytu substringu
+ *
+ * @param text - sifrovany text
+ */
 void find_frequencies(char* text){
     int pos = 0;
     int max_index = len - 2*MAX_GRAM;
     char *substr_start;
     int letter_index;
-    //cout << "\nlength:" << len << " max_index:" << max_index << "\n";
 
-    //init
-    //memset(letter_freq, 0, ALPH_SIZE);
-    for(int i = 0; i<ALPH_SIZE; i++)
-        letter_freq[i]=0;
+    memset(letter_freq, 0, ALPH_SIZE*sizeof(int));
 
-    for(int pos = 0; pos <= max_index; pos++){
-        letter_index = text[pos]-'a';
+    //ulozi frekvence vyskytu pismen
+    for(int i = 0; i<len; i++){
+        letter_index = text[i]-'a';
         letter_freq[letter_index]++; 
+    }
+
+    //vyskyty substringu
+    for(int pos = 0; pos <= max_index; pos++){
         substr_start = text+pos;
         for(int d = MIN_GRAM; d<=MAX_GRAM; d++){
             if(freq[string(substr_start,d)] == 0){
-                //cout << "find_distance[" << substr << "]\n";
                 find_distances(text, pos, d, substr_start);
             }
             else break;
         }
     }
-
-    for(int i=max_index; i<len; i++){
-        letter_index = text[pos]-'a';
-        letter_freq[letter_index]++; 
-    }
 }
 
+/*
+ * Hleda rozumneho nejvetsiho spolecneho delitele pro vyskyty shodnych substringu
+ *
+ * @return - spolecneho nejvetsiho delitele
+ */
 int get_gcd(){
     map<int, int> divisors;
     int dist, num; 
@@ -119,97 +151,112 @@ int get_gcd(){
     int limit = total_found*2/3;
     for(map<int,int>::iterator i = divisors.begin(); i != divisors.end(); i++){
         if(i->second >= limit && max < i->first){
-            //cout << "\ndivisor:" << i->first << " count:" << i->second;
             max = i->first;
         }
     }
     return max;
 }
 
+/*
+ * Friedmanuv test
+ */
 double friedman_test(){
     long sum = 0;
     double N = len*(len-1);
     for(int i = 0; i<ALPH_SIZE; i++){
         sum += letter_freq[i]*(letter_freq[i]-1); 	
     }
-    //cout << "\n\nsum:"<< sum << "\n\n";
     double K_0 = sum/N;
     return (K_P-K_R)/(K_0-K_R);		
 }
 
+/*
+ * Kaisiskeho test
+ */
 int kaisisky_test(char* text){
-    total_found = 0;
-
     find_frequencies(text);
     return get_gcd();		
 }
 
+/*
+ * Posun v abecede s modulem
+ *
+ * @param char_index - pismeno
+ * @param g - hodnota shift
+ * @return posun
+ */
 int mod(int char_index, int g){
-    return (char_index+g) % ALPH_SIZE;    
+    int x = (char_index+g) % ALPH_SIZE;
+    return x;
 }
 
+/*
+ * Vrati rozdil mezi indexem koincidence a M_g
+ *
+ * @param tested - hodnota "indexu koincidence" pro shiftnutou abecedu textu
+ * @return - o kolik se lisi "index koincidence" shiftnute abecedy od te anglicke
+ */
 double get_diff(double tested){
     double diff = tested - K_P;
-
     if(diff < 0)
         diff = -diff;
-
     return diff;
 }
 
+/*
+ * Najde heslo k textu
+ *
+ * @param pwd - heslo, ktere bude zde nastaveno
+ * @param pwd_len - delka hesla
+ * @param cipher_text - sifrovany text
+ */
 void set_password(char* pwd, int pwd_len, char* cipher_text){
     pwd[pwd_len] = '\0';
     int cipher_letter_freq[ALPH_SIZE];
-    int total_freq[ALPH_SIZE];
-    memset(total_freq, 0, ALPH_SIZE);
-    for(int i=0;i<ALPH_SIZE; i++)
-        total_freq[i] = 0;
-    int letter_count;
+    int submsg_len;
     int letter_index;
 
-    //for each submessage
+    //zpracovavej pro kazdy podretezec textu definovane klicem
     for(int pwd_index = 0; pwd_index < pwd_len; pwd_index++){
-
-        memset(cipher_letter_freq, 0, ALPH_SIZE);
-        for(int i=0;i<ALPH_SIZE; i++)
-            cipher_letter_freq[i] = 0;
-        letter_count = 0;
+        memset(cipher_letter_freq, 0, ALPH_SIZE*sizeof(int));
+        submsg_len = 0;
         
-        //find frequencies
+        //najde frekvence pismen
         for(int i=pwd_index; i<len; i+=pwd_len){
-            letter_count++;
+            submsg_len++;
             letter_index = cipher_text[i]-'a';
             cipher_letter_freq[letter_index]++;
-            total_freq[letter_index]++;
         }
-        
+       
         int g_index = 0;
-        double coincidence, g_best = 100;
-        //count best index of coincidence
+        double mg, g_best = 100;
+        //spocti nejlepsi M_g
         for(int g=0; g<ALPH_SIZE; g++){
-            coincidence = 0;
+            mg = 0;
             for(int i=0; i<ALPH_SIZE; i++){
-                char l_freq = cipher_letter_freq[mod(i,g)];
-                coincidence += (letter_table[i]*(l_freq))/letter_count;
+                int l_freq = cipher_letter_freq[mod(i,g)];
+                mg += (letter_table[i]*l_freq)/submsg_len;
             }
 
-            //coincidence - K_P closest to 0 means english
-            double diff = get_diff(coincidence);
-            cout << K_P << " " << coincidence << "\n";
+            //cim blize je posunute M_g - K_P, tim spis se jedna o anglictinu
+            double diff = get_diff(mg);
             if(diff < g_best){
                 g_best = diff;
                 g_index = g;
             }
         }
-        cout << "\n";
         pwd[pwd_index] = g_index + 'a';
-    }
-
-    for(int i = 0; i < ALPH_SIZE; i++){
-        cout << (char)(i+'a') << " " << letter_freq[i] << " " << total_freq[i] << "\n";
     }
 }
 
+
+
+
+
+
+/////////////////////////////////////////
+//               MAIN                  //
+/////////////////////////////////////////
 int main(int argc, char* argv[]) {
     string line, input;
     while(getline(cin, line)){
@@ -232,10 +279,10 @@ int main(int argc, char* argv[]) {
         ic += letter_table[i]*letter_table[i];
     }
 
-    //cout << sum << " " <<ic << "\n";
     cout << friedman << ";" << kaisisky << ";" << kaisisky << ";" << password << "\n"; 
 
     free(password);
     free(temp);
+
     return 0;
 }

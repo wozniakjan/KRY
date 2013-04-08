@@ -18,6 +18,9 @@ $(PROJ): $(OBJS)
 run: 
 		./kry < ./sifry/ahoj.txt
 
+pack:
+	tar -zcvf xwozni00.tar.gz src/* Makefile dokumentace.pdf
+
 clean:
 	rm -rf kry
 	rm -rf main.o

@@ -1,0 +1,58 @@
+
+\documentclass[a4paper,11pt]{article}
+\usepackage[czech]{babel}
+\usepackage[utf8]{inputenc}
+%\usepackage[IL2]{fontenc}
+\usepackage[left=1.5cm,text={18cm, 25cm},top=2.5cm]{geometry}
+\usepackage{color}
+\usepackage[unicode, colorlinks,hyperindex,plainpages=false,pdftex]{hyperref}
+\usepackage{graphicx}
+
+
+\begin{document}
+
+\begin{center}{\LARGE\textbf{Vigenerova šifra}}\\[0.2cm]
+\newcommand{\autor}[2]{#1&\texttt{#2@stud.fit.vutbr.cz}\tabularnewline}
+\begin{tabular}{ll}
+    \autor{Jan Wozniak}{xwozni00}
+\end{tabular}
+\end{center}
+
+
+\section{Úvod}
+
+Tato dokumentace stručně popisuje implementaci 1. projektu do předmětu kryptografie, prolomení hesla Vigenerovy šifry.
+Program je napsaný v jazyce C/C++, na standardním vstupu očekává zašifrovaný anglický text a na standardní výstup vypíše
+\texttt{[friedman\_test];[kaisisky\_test];[delka\_hesla];[heslo]} kde \texttt{friedman\_test} je výsledek Friedmanova
+testu jako float čislo, \texttt{kaisisky\_test} je výsledek Kaisiského testu jako integer,
+\texttt{delka\_hesla} je odhadnutá délka hesla na základě předchozích testů, \texttt{heslo} je odhadované heslo použité pro
+zašifrování textu.
+
+\section{Implementace}
+Projekt je v jediném zdrojovém souboru \texttt{main.cpp} v adresáři \texttt{src/}. Pro urychlení operací s textem, zejména
+vyhledávání shodných podřetězců v Kaisiského textu je využita pointerová aritmetika a zdrojový text je uložen v paměti jako
+pole \texttt{char}. V rámci odstranění všech znaků mimo písmen je text rovněž převeden na lower-case.
+
+Funkce \texttt{kaisisky()} očekává jediný parametr, a to profiltrovaný text, a vrací hodnotu tohoto testu. Ta volá nejprve
+funkci \texttt{get\_frequencies()}, která tyhledává v textu shody na trigrafy, 4-grafy a 5-grafy. Poté volá funkci \texttt{get\_gcd()}
+které mezi nalezenýmí frekvencemi vyhledá vhodného největšího společného dělitele a tím určí odhad délky hesla.
+
+Funkce \texttt{friedman()} na základě frekvencí výskytu písmen v šifrovaném textu a principu \textit{indexu koincidence} 
+spočte hodnotu friedmanova testu.
+
+Posledním úkolem je zjištění hesla z textu, který se dá řešit díky známé délce hesla $n$ jako monoalfabetická šifra, neboť
+text můžeme rozdělit na $n$ podřetězců z nichž každý podřetězec je právě jedna Caesarova šifra. Poté na základě frekvencí
+výskytu písmen v textu jsme pomocí shiftování abecedy schopni určit, kdy je text nejpodobnější anglickému textu. Pro zjištění hesla
+slouží funkce \texttt{set\_password()}.
+
+Délka odhadu hesla je nakonec stanovena na výsledek Kaisiského testu, neboť po krátkém prozkoumání pár testovacích výsledků
+byla tato hodnota vcelku přesná a reprezentovala docela věrně délku skutečného hesla, pokud to nebylo příliš dlouhé.
+
+\section{Závěr}
+V rámci tohoto projektu bylo za úkol odhadnout délku hesla a heslo samontné textu, který je šifrován Vigenerovou šifrou.
+Implementované metriky jsou použitelné dobře pro delší anglické texty, neboť hodnoty jako frekvence výskytu písmen a 
+vyhledávání shodných podřetězců mají vyšší informační hodnotu pro delší text a hodnoty konstant kappa jsou závislé na
+jazyku textu.
+
+
+\end{document}
