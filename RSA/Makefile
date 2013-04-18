@@ -17,7 +17,7 @@ $(PROJ): $(OBJS)
 	$(CC) $(FLAGS) $(OBJS) -o $(PROJ) $(LIBS) 
 
 run: 
-	./kry -g 1024
+	./kry -g 8
 
 pack:
 	tar -zcvf xwozni00.tar.gz src/* Makefile dokumentace.pdf
