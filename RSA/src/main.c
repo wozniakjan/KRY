@@ -7,7 +7,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <gmp.h>
+#include <gmp.h>  
+
+#define NEXTPRIME mpz_nextprime
+#define INVERT mpz_invert
+//#define NEXTPRIME nextprime
+//#define INVERT invert
 
 typedef struct {
     mpz_t p;
@@ -42,8 +47,11 @@ void print_help(){
     printf( "vsechna cisla na vstupu i vystupu (krome B) jsou hexadecimalni, zacinaji '0x'\n");
 }
 
-void next_prime(mpz_t dst, mpz_t src){
 
+int miller_rabin (mpz_srcptr n, int reps, gmp_randstate_t rnd) {
+}
+
+void nextprime (mpz_ptr p, mpz_srcptr n){
 }
 
 void gen_primes(Key* k, int bit_length) {
@@ -65,11 +73,11 @@ void gen_primes(Key* k, int bit_length) {
     //set the buffer as integer
     mpz_import(tmp1, bytes_len_prime, 1, sizeof(buff[0]), 0, 0, buff);
     //pick the next prime from that number
-    mpz_nextprime(k->p, tmp1);
+    NEXTPRIME(k->p, tmp1);
 
     mpz_mod(tmp2, k->p, k->e);
     while(!mpz_cmp_ui(tmp2, 1)){
-        mpz_nextprime(k->p, k->p);
+        NEXTPRIME(k->p, k->p);
         mpz_mod(tmp2, k->p, k->e);
     }
 
@@ -81,10 +89,10 @@ void gen_primes(Key* k, int bit_length) {
     mpz_import(tmp1, bytes_len_prime, 1, sizeof(buff[0]), 0, 0, buff);
     
     // Pick the next prime starting from that random number
-    mpz_nextprime(k->q, tmp1);
+    NEXTPRIME(k->q, tmp1);
     mpz_mod(tmp2, k->q, k->e);
     while(!mpz_cmp_ui(tmp2, 1)){
-        mpz_nextprime(k->q, k->q);
+        NEXTPRIME(k->q, k->q);
         mpz_mod(tmp2, k->q, k->e);
     }
 
@@ -97,10 +105,7 @@ void gen_primes(Key* k, int bit_length) {
     mpz_mul(phi, tmp1, tmp2);
 
     // d = multiplicative_inverse(e mod phi)
-    if(mpz_invert(k->d, k->e, phi) == 0){
-        mpz_gcd(tmp1, k->e, phi);
-        printf("invert failed");
-    }
+    INVERT(k->d, k->e, phi);
 
     //cleaning
     free(buff);
