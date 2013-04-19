@@ -42,6 +42,10 @@ void print_help(){
     printf( "vsechna cisla na vstupu i vystupu (krome B) jsou hexadecimalni, zacinaji '0x'\n");
 }
 
+void next_prime(mpz_t dst, mpz_t src){
+
+}
+
 void gen_primes(Key* k, int bit_length) {
     srand(time(NULL));
     mpz_t phi, tmp1, tmp2;
@@ -132,13 +136,19 @@ const char* generate(const char* B){
 }
 
 const char* cipher(const char* E, const char* N, const char* M){
-    //convert E, N, M
-    //mpz_powm(C, M, kp.e, kp.n);
-    return "0x0\n";
-}
+    Key k;
+    mpz_init(k.p); mpz_init(k.q); mpz_init(k.n); mpz_init(k.e); mpz_init(k.d);
+    mpz_init_set_str(k.n, N+2, 16); mpz_init_set_str(k.e, E+2, 16);
+    mpz_t m; mpz_init(m); mpz_init_set_str(m, M+2, 16);
+    mpz_t c; mpz_init(c);
 
-const char* decipher(const char* D, const char* N, const char* C){
-    return "0x0\n";
+    mpz_powm(c, m, k.e, k.n);
+
+    int len = strlen(E);
+    char *buff = (char*)malloc(sizeof(char)*len); 
+    gmp_sprintf(buff,"0x%Zx\n",c);
+
+    return buff;
 }
 
 /////////////////////////////////////////
@@ -157,7 +167,7 @@ int main(int argc, char* argv[]) {
             printf("%s",cipher(argv[2], argv[3], argv[4])); 
         }
         else if(strcmp(argv[1],"-d")==0 && argc == 5){
-            printf("%s",decipher(argv[2], argv[3], argv[4])); 
+            printf("%s",cipher(argv[2], argv[3], argv[4])); 
         }
         else if(strcmp(argv[1],"-b")==0 && argc == 5){
             printf("crack\n"); 
