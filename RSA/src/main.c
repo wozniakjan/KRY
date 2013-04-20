@@ -9,10 +9,17 @@
 #include <string.h>
 #include <gmp.h>  
 
-#define NEXTPRIME mpz_nextprime
+#define SEED_SIZE 1024
+
+//#define NEXTPRIME mpz_nextprime
 #define INVERT mpz_invert
-//#define NEXTPRIME nextprime
+//#define POWM mpz_powm
+#define NEXTPRIME nextprime
 //#define INVERT invert
+#define POWM powm
+
+//global variables
+gmp_randstate_t random_state;
 
 typedef struct {
     mpz_t p;
@@ -47,32 +54,125 @@ void print_help(){
     printf( "vsechna cisla na vstupu i vystupu (krome B) jsou hexadecimalni, zacinaji '0x'\n");
 }
 
+//Montgomery ladder
+void powm(mpz_t dst, mpz_t b, mpz_t e, mpz_t m){
+	unsigned long int k = mpz_sizeinbase (e, 2); 
+	mpz_t x1, x2;
+	mpz_init(x1); mpz_init(x2);
+	mpz_set(x1,b); mpz_pow_ui(x2,b,2);
+	int ni;
 
-int miller_rabin (mpz_srcptr n, int reps, gmp_randstate_t rnd) {
+	for(unsigned long int i=k-2; i>0; i--){
+		ni = mpz_tstbit(e,i);
+		if(ni == 0){
+			mpz_mul(x2,x1,x2);
+			mpz_mul(x1,x1,x1);
+		} else {
+			mpz_mul(x1, x1, x2);
+			mpz_mul(x2, x2, x2);
+		}
+		mpz_mod(x1,x1,m);
+		mpz_mod(x2,x2,m);
+	}
+	//and for i == 0 last loop
+	ni = mpz_tstbit(e,0);
+	if(ni == 0){
+		mpz_mul(x1,x1,x1);
+	} else {
+		mpz_mul(x1, x1, x2);
+	}
+	mpz_mod(dst,x1,m);
 }
 
-void nextprime (mpz_ptr p, mpz_srcptr n){
+int millerrabin (mpz_t n, int k) {
+	unsigned long int s = 0;
+	mpz_t d, a, r_max, x, n1;
+	mpz_init(d); mpz_init(a); mpz_init(r_max); mpz_init(x); mpz_init(n1); 
+	mpz_sub_ui(r_max,n,4);
+
+	mpz_sub_ui(n1,n,1);	
+	mpz_set(d,n1); 
+
+	//n-1 = 2^s * d
+	do{	
+		mpz_tdiv_q_2exp(d, d, 1);
+		s++;
+	} while(mpz_even_p(d));
+
+	int loop;
+	for(int i = 0; i<k; i++){
+		loop = 0;
+		//a in <2; n-2>
+		mpz_urandomm(a, random_state, r_max);
+		mpz_add_ui(a,a,2);
+
+		POWM(x, a, d, n);	
+		if(mpz_cmp_ui(x,1) == 0 || mpz_cmp(x,n1) == 0)
+			continue;
+
+		for(unsigned long int r = 1; r<s-1; r++){
+			mpz_mul(x, x, x);
+			mpz_mod(x, x, n);
+			if(mpz_cmp_ui(x,1) == 0){
+				return 0;
+			}	
+			if(mpz_cmp(x,n1) == 0){
+				loop = 1;
+				break;
+			}
+		}
+		if(loop == 0)
+			return 0;
+	}
+
+	return 1;
 }
 
-void gen_primes(Key* k, int bit_length) {
+void nextprime (mpz_t dst, mpz_t src){
+	mpz_add_ui(dst, src, 2);
+	while(!mpz_millerrabin(dst,20)){
+		mpz_add_ui(dst,dst,2);
+	}
+}
+
+void init_random(){
+	gmp_randinit_default(random_state);
+	unsigned char buff[SEED_SIZE];
     srand(time(NULL));
-    mpz_t phi, tmp1, tmp2;
-    mpz_init(phi); mpz_init(tmp1); mpz_init(tmp2);
-    int bytes_len_prime = bit_length/8;
-
-    //buffer of random numbers
-    unsigned char *buff = (unsigned char*)malloc(sizeof(unsigned char)*bytes_len_prime);
-    for(int i=0; i<bytes_len_prime; i++){
+    for(int i=0; i<SEED_SIZE; i++){
         buff[i] = rand() % 0xFF;
+    }
+
+	mpz_t seed; mpz_init(seed);
+	mpz_import(seed, SEED_SIZE, 1, sizeof(buff[0]), 0, 0, buff);
+
+	gmp_randseed(random_state, seed);
+}
+
+void set_random(mpz_t val, int byte_count){
+    unsigned char *buff = (unsigned char*)malloc(sizeof(unsigned char)*byte_count);
+    for(int i=0; i<byte_count; i++){
+        buff[i] = 0x2B;//rand() % 0xFF;
     }
 
     //heuristics for easier prime generation
     buff[0] |= 0xC0;
-    buff[bytes_len_prime-1] |= 0x01;
+    buff[byte_count-1] |= 0x01;
 
     //set the buffer as integer
-    mpz_import(tmp1, bytes_len_prime, 1, sizeof(buff[0]), 0, 0, buff);
-    //pick the next prime from that number
+    mpz_import(val, byte_count, 1, sizeof(buff[0]), 0, 0, buff);
+	free(buff);
+}
+
+void gen_primes(Key* k, int bit_length) {
+	init_random();
+
+    mpz_t phi, tmp1, tmp2;
+    mpz_init(phi); mpz_init(tmp1); mpz_init(tmp2);
+    int bytes_len_prime = bit_length/8;
+
+	//generate p
+	set_random(tmp1, bytes_len_prime);
     NEXTPRIME(k->p, tmp1);
 
     mpz_mod(tmp2, k->p, k->e);
@@ -82,13 +182,7 @@ void gen_primes(Key* k, int bit_length) {
     }
 
     //generate q
-    for(int i = 0; i < bytes_len_prime; i++)
-        buff[i] = rand() % 0xFF; 
-    buff[0] |= 0xC0;
-    buff[bytes_len_prime - 1] |= 0x01;
-    mpz_import(tmp1, bytes_len_prime, 1, sizeof(buff[0]), 0, 0, buff);
-    
-    // Pick the next prime starting from that random number
+	set_random(tmp1, bytes_len_prime); 
     NEXTPRIME(k->q, tmp1);
     mpz_mod(tmp2, k->q, k->e);
     while(!mpz_cmp_ui(tmp2, 1)){
@@ -106,9 +200,8 @@ void gen_primes(Key* k, int bit_length) {
 
     // d = multiplicative_inverse(e mod phi)
     INVERT(k->d, k->e, phi);
-
+	
     //cleaning
-    free(buff);
     mpz_clear(phi); mpz_clear(tmp1); mpz_clear(tmp2);
 }
 
@@ -130,7 +223,7 @@ const char* generate(const char* B){
     if(b >= 4){
         int len = b*5;
         return_values = (char*)malloc(sizeof(char)*(len)); 
-        //gmp_sprintf(return_values,"0x%Zd 0x%Zd 0x%Zd 0x%Zd 0x%Zd\n",k.p, k.q, k.n, k.e, k.d);
+        //gmp_sprintf(return_values,"%Zd %Zd %Zd %Zd %Zd\n",k.p, k.q, k.n, k.e, k.d);
         gmp_sprintf(return_values,"0x%Zx 0x%Zx 0x%Zx 0x%Zx 0x%Zx\n",k.p, k.q, k.n, k.e, k.d);
     }
 
@@ -147,7 +240,7 @@ const char* cipher(const char* E, const char* N, const char* M){
     mpz_t m; mpz_init(m); mpz_init_set_str(m, M+2, 16);
     mpz_t c; mpz_init(c);
 
-    mpz_powm(c, m, k.e, k.n);
+    POWM(c, m, k.e, k.n);
 
     int len = strlen(E);
     char *buff = (char*)malloc(sizeof(char)*len); 
