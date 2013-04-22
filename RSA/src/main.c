@@ -303,13 +303,21 @@ const char* cipher(const char* E, const char* N, const char* M){
 }
 
 void factor_integer(mpz_t p, mpz_t q, char* n){
-    /*msieve_obj* factors = msieve_obj_new(int_start, flags,
-            savefile_name, logfile_name,
-            nfs_fbfile_name,
-            *seed1, *seed2, max_relations,
+    uint32 seed1, seed2;
+	uint32 flags;
+	uint32 max_relations = 0;
+	enum cpu_type cpu;
+	uint32 cache_size1, cache_size2;
+	uint32 num_threads = 0;
+	uint32 which_gpu;
+	const char *nfs_args = NULL;
+	
+	msieve_obj* factors = msieve_obj_new(n, flags,
+            NULL, NULL, NULL,
+            seed1, seed2, max_relations,
             cpu, cache_size1, cache_size2,
             num_threads, which_gpu,
-            nfs_args);*/
+            nfs_args);
 }
 
 const char* crack(char* E, char* N, char* C){
