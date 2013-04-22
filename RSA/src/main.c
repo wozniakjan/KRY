@@ -12,10 +12,10 @@
 #define SEED_SIZE 1024
 
 //#define NEXTPRIME mpz_nextprime
-#define INVERT mpz_invert
+//#define INVERT mpz_invert
 //#define POWM mpz_powm
 #define NEXTPRIME nextprime
-//#define INVERT invert
+#define INVERT invert
 #define POWM powm
 
 //global variables
@@ -152,7 +152,7 @@ void init_random(){
 void set_random(mpz_t val, int byte_count){
     unsigned char *buff = (unsigned char*)malloc(sizeof(unsigned char)*byte_count);
     for(int i=0; i<byte_count; i++){
-        buff[i] = 0x2B;//rand() % 0xFF;
+        buff[i] = 0x2B;//rand() % 0xFF;//
     }
 
     //heuristics for easier prime generation
@@ -162,6 +162,56 @@ void set_random(mpz_t val, int byte_count){
     //set the buffer as integer
     mpz_import(val, byte_count, 1, sizeof(buff[0]), 0, 0, buff);
 	free(buff);
+}
+
+//g = ax + by 
+void extend_gcd(mpz_t x, mpz_t a, mpz_t b){
+	mpz_t y, last_x, last_y, q, tmp_a, tmp_b, tmp;
+	mpz_init(y); mpz_init(last_x); mpz_init(last_y); mpz_init(q); mpz_init(tmp);
+	mpz_init(tmp_a); mpz_set(tmp_a, a); mpz_init(tmp_b); mpz_set(tmp_b, b);
+	
+	mpz_set_ui(x,0); mpz_set_ui(y,1); mpz_set_ui(last_x, 1); mpz_set_ui(last_y, 0);
+	while(mpz_cmp_ui(tmp_b,0) != 0){
+		//q = a div b
+		mpz_div(q, tmp_a, tmp_b);
+		
+		//(a,b) = (b, a mod b)
+		mpz_set(tmp, tmp_a);
+		mpz_set(tmp_a, tmp_b);
+		mpz_mod(tmp_b, tmp, tmp_b);
+
+		//(x, lastx) = (lastx - q*x, x)
+		mpz_mul(tmp, q, x);
+		mpz_sub(tmp, last_x, tmp);
+		mpz_set(last_x, x);
+		mpz_set(x, tmp);
+
+		//(y, lasty) = (lasty - q*y, y)
+		mpz_mul(tmp, q, y);
+		mpz_sub(tmp, last_y, tmp);
+		mpz_set(last_y, y);
+		mpz_set(y, tmp);
+	}	
+
+	mpz_set(x, last_x);
+	mpz_set(y, last_y);
+}
+
+void invert(mpz_t dst, mpz_t x, mpz_t n){
+	mpz_t gcd, tmp;
+	mpz_init(gcd); mpz_init(tmp); 
+
+	extend_gcd(tmp, x, n);
+
+	if(tmp->_mp_size >= 0){
+		mpz_set(dst,tmp);
+	}else{
+		if(n->_mp_size >= 0){
+			mpz_add(dst, tmp, n);
+		}else{
+			mpz_sub(dst, tmp, n);
+		}
+	}
 }
 
 void gen_primes(Key* k, int bit_length) {
