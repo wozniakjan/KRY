@@ -297,6 +297,40 @@ const char* cipher(const char* E, const char* N, const char* M){
     char *buff = (char*)malloc(sizeof(char)*len); 
     gmp_sprintf(buff,"0x%Zx\n",c);
 
+    mpz_clear(k.p); mpz_clear(k.q); mpz_clear(k.n); mpz_clear(k.e); mpz_clear(k.d);
+    mpz_clear(m); mpz_clear(c);
+    return buff;
+}
+
+void factor_integer(mpz_t p, mpz_t q, char* n){
+    /*msieve_obj* factors = msieve_obj_new(int_start, flags,
+            savefile_name, logfile_name,
+            nfs_fbfile_name,
+            *seed1, *seed2, max_relations,
+            cpu, cache_size1, cache_size2,
+            num_threads, which_gpu,
+            nfs_args);*/
+}
+
+const char* crack(char* E, char* N, char* C){
+    Key k;
+    mpz_init(k.p); mpz_init(k.q); mpz_init(k.d);
+    mpz_init_set_str(k.n, N+2, 16); mpz_init_set_str(k.e, E+2, 16);
+    mpz_t c; mpz_init_set_str(c, C+2, 16);
+    mpz_t m; mpz_init(m);
+
+    factor_integer(k.p, k.q, N+2);
+    char* M = (char*)malloc(5*sizeof(char)); strcpy(M, "0x1\n");//cipher(k.e, k.n, c); //decipher
+
+    int len = strlen(N) * 2 + strlen(C);
+    char *buff = (char*)malloc(sizeof(char)*len);
+    gmp_sprintf(buff,"0x%Zx 0x%Zx ", k.p, k.q);
+    strcpy(buff + strlen(buff), M);
+    free(M);
+
+    mpz_clear(k.p); mpz_clear(k.q); mpz_clear(k.n); mpz_clear(k.e); mpz_clear(k.d);
+    mpz_clear(c);
+
     return buff;
 }
 
@@ -309,21 +343,27 @@ int main(int argc, char* argv[]) {
         print_help();
     }
     else {
+        const char* str = NULL;
         if(strcmp(argv[1],"-g")==0 && argc == 3){
-            printf("%s",generate(argv[2])); 
+            str = generate(argv[2]);
+            printf("%s",str);
         }
         else if(strcmp(argv[1],"-e")==0 && argc == 5){
-            printf("%s",cipher(argv[2], argv[3], argv[4])); 
+            str = cipher(argv[2], argv[3], argv[4]);
+            printf("%s",str); 
         }
         else if(strcmp(argv[1],"-d")==0 && argc == 5){
-            printf("%s",cipher(argv[2], argv[3], argv[4])); 
+            str = cipher(argv[2], argv[3], argv[4]);
+            printf("%s",str); 
         }
         else if(strcmp(argv[1],"-b")==0 && argc == 5){
-            printf("crack\n"); 
+            str = crack(argv[2], argv[3], argv[4]);
+            printf("%s",str); 
         }
         else{
             print_help();
         }
+        if(str != NULL) free(str);
     }
 
     return 0;
