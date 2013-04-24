@@ -10,6 +10,7 @@
 #include <gmp.h>  
 #include <msieve.h>
 
+//seed length for random generator
 #define SEED_SIZE 1024
 
 //#define NEXTPRIME mpz_nextprime
@@ -20,8 +21,9 @@
 #define POWM powm
 
 //global variables
-gmp_randstate_t random_state;
+gmp_randstate_t random_state; //state of GMP random generator
 
+//RSA key structure
 typedef struct {
     mpz_t p;
     mpz_t q; 
@@ -30,6 +32,7 @@ typedef struct {
     mpz_t d;
 } Key;
 
+//Prints usage of the program
 void print_help(){
     printf("Implementace a prolomeni RSA\n");
     printf("Generovani klicu\n");
@@ -85,6 +88,7 @@ void powm(mpz_t dst, mpz_t b, mpz_t e, mpz_t m){
 	mpz_mod(dst,x1,m);
 }
 
+//Miller Rabin test for probable primality
 int millerrabin (mpz_t n, int k) {
 	unsigned long int s = 0;
 	mpz_t d, a, r_max, x, n1;
@@ -125,10 +129,10 @@ int millerrabin (mpz_t n, int k) {
 		if(loop == 0)
 			return 0;
 	}
-
 	return 1;
 }
 
+//gets next prime number from certain number
 void nextprime (mpz_t dst, mpz_t src){
 	mpz_add_ui(dst, src, 2);
 	while(!mpz_millerrabin(dst,20)){
@@ -136,6 +140,7 @@ void nextprime (mpz_t dst, mpz_t src){
 	}
 }
 
+//initialize random generators
 void init_random(){
 	gmp_randinit_default(random_state);
 	unsigned char buff[SEED_SIZE];
@@ -150,10 +155,11 @@ void init_random(){
 	gmp_randseed(random_state, seed);
 }
 
+//sets random value
 void set_random(mpz_t val, int byte_count){
     unsigned char *buff = (unsigned char*)malloc(sizeof(unsigned char)*byte_count);
     for(int i=0; i<byte_count; i++){
-        buff[i] = 0x2B;//rand() % 0xFF;//
+        buff[i] = rand() % 0xFF;//0x2B;//
     }
 
     //heuristics for easier prime generation
@@ -165,7 +171,7 @@ void set_random(mpz_t val, int byte_count){
 	free(buff);
 }
 
-//g = ax + by 
+//soulution for g = ax + by -- modular multiplicative inverse 
 void extend_gcd(mpz_t x, mpz_t a, mpz_t b){
 	mpz_t y, last_x, last_y, q, tmp_a, tmp_b, tmp;
 	mpz_init(y); mpz_init(last_x); mpz_init(last_y); mpz_init(q); mpz_init(tmp);
@@ -198,6 +204,7 @@ void extend_gcd(mpz_t x, mpz_t a, mpz_t b){
 	mpz_set(y, last_y);
 }
 
+//sets the multiplicative inverse
 void invert(mpz_t dst, mpz_t x, mpz_t n){
 	mpz_t gcd, tmp;
 	mpz_init(gcd); mpz_init(tmp); 
@@ -215,6 +222,7 @@ void invert(mpz_t dst, mpz_t x, mpz_t n){
 	}
 }
 
+//generate random primes p, q into Key
 void gen_primes(Key* k, int bit_length) {
 	init_random();
 
@@ -256,6 +264,7 @@ void gen_primes(Key* k, int bit_length) {
     mpz_clear(phi); mpz_clear(tmp1); mpz_clear(tmp2);
 }
 
+//returns string in specified format for generation
 const char* generate(const char* B){
     //number of bites of bites for modulus
     int b = atoi(B); 
@@ -284,6 +293,7 @@ const char* generate(const char* B){
     return return_values;
 }
 
+//returns string in specified format for cipher/decipher
 const char* cipher(const char* E, const char* N, const char* M){
     Key k;
     mpz_init(k.p); mpz_init(k.q); mpz_init(k.n); mpz_init(k.e); mpz_init(k.d);
@@ -302,6 +312,7 @@ const char* cipher(const char* E, const char* N, const char* M){
     return buff;
 }
 
+//sets random seeds
 void get_random_seeds(uint32 *seed1, uint32 *seed2) {
 	uint32 tmp_seed1, tmp_seed2;
     uint64 high_res_time = read_clock();
@@ -354,22 +365,32 @@ const char* crack(char* E, char* N, char* C){
     mpz_init_set_str(k.n, N+2, 16); mpz_init_set_str(k.e, E+2, 16);
     mpz_t c; mpz_init_set_str(c, C+2, 16);
     mpz_t m; mpz_init(m);
+    mpz_t phi, tmp1, tmp2;
+    mpz_init(phi); mpz_init(tmp1); mpz_init(tmp2);
 
     int n_len = strlen(N);
     char *N_str = (char*)malloc(n_len*2*sizeof(char));
     gmp_sprintf(N_str, "%Zd", k.n);
 
     factor_integer(k.p, k.q, N_str);
-    char* M = (char*)malloc(5*sizeof(char)); strcpy(M, "0x1\n");//cipher(k.e, k.n, c); //decipher
+    
+    // phi(n) = (p-1)*(q-1)
+    mpz_sub_ui(tmp1, k.p, 1);
+    mpz_sub_ui(tmp2, k.q, 1);
+    mpz_mul(phi, tmp1, tmp2);
+    
+    // d = multiplicative_inverse(e mod phi)
+    INVERT(k.d, k.e, phi);
 
-    int len = n_len * 2 + strlen(C);
+    // decipher
+    POWM(m, c, k.d, k.n);
+
+    int len = n_len * 2 + strlen(C)*2;
     char *buff = (char*)malloc(sizeof(char)*len);
-    gmp_sprintf(buff,"0x%Zx 0x%Zx ", k.p, k.q);
-    strcpy(buff + strlen(buff), M);
-    free(M);
+    gmp_sprintf(buff,"0x%Zx 0x%Zx 0x%Zx\n", k.p, k.q, m);
 
     mpz_clear(k.p); mpz_clear(k.q); mpz_clear(k.n); mpz_clear(k.e); mpz_clear(k.d);
-    mpz_clear(c);
+    mpz_clear(phi); mpz_clear(tmp1); mpz_clear(tmp2); mpz_clear(c);
     if(N_str != NULL) free(N_str);
 
     return buff;
