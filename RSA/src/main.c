@@ -302,8 +302,21 @@ const char* cipher(const char* E, const char* N, const char* M){
     return buff;
 }
 
+void get_random_seeds(uint32 *seed1, uint32 *seed2) {
+	uint32 tmp_seed1, tmp_seed2;
+    uint64 high_res_time = read_clock();
+    tmp_seed1 = ((uint32)(high_res_time >> 32) ^
+             (uint32)time(NULL)) * 
+             (uint32)getpid();
+    tmp_seed2 = (uint32)high_res_time;
+
+	(*seed1) = tmp_seed1 * ((uint32)40499 * 65543);
+	(*seed2) = tmp_seed2 * ((uint32)40499 * 65543);
+}
+
 void factor_integer(mpz_t p, mpz_t q, char* n){
     uint32 seed1, seed2;
+    get_random_seeds(&seed1, &seed2);
 	uint32 flags;
 	uint32 max_relations = 0;
 	enum cpu_type cpu;
@@ -312,12 +325,27 @@ void factor_integer(mpz_t p, mpz_t q, char* n){
 	uint32 which_gpu;
 	const char *nfs_args = NULL;
 	
-	msieve_obj* factors = msieve_obj_new(n, flags,
+	msieve_obj* factorization = msieve_obj_new(n, flags,
             NULL, NULL, NULL,
             seed1, seed2, max_relations,
             cpu, cache_size1, cache_size2,
             num_threads, which_gpu,
             nfs_args);
+
+    if(factorization == NULL) {
+        return;
+    }
+
+	msieve_run(factorization);
+
+	if (!(factorization->flags & MSIEVE_FLAG_FACTORIZATION_DONE)) {
+        return;
+    }
+
+    msieve_factor *factor = factorization->factors; 
+    mpz_set_str(p, factor->number, 10);
+    factor = factor->next;
+    mpz_set_str(q, factor->number, 10); 
 }
 
 const char* crack(char* E, char* N, char* C){
@@ -327,10 +355,14 @@ const char* crack(char* E, char* N, char* C){
     mpz_t c; mpz_init_set_str(c, C+2, 16);
     mpz_t m; mpz_init(m);
 
-    factor_integer(k.p, k.q, N+2);
+    int n_len = strlen(N);
+    char *N_str = (char*)malloc(n_len*2*sizeof(char));
+    gmp_sprintf(N_str, "%Zd", k.n);
+
+    factor_integer(k.p, k.q, N_str);
     char* M = (char*)malloc(5*sizeof(char)); strcpy(M, "0x1\n");//cipher(k.e, k.n, c); //decipher
 
-    int len = strlen(N) * 2 + strlen(C);
+    int len = n_len * 2 + strlen(C);
     char *buff = (char*)malloc(sizeof(char)*len);
     gmp_sprintf(buff,"0x%Zx 0x%Zx ", k.p, k.q);
     strcpy(buff + strlen(buff), M);
@@ -338,6 +370,7 @@ const char* crack(char* E, char* N, char* C){
 
     mpz_clear(k.p); mpz_clear(k.q); mpz_clear(k.n); mpz_clear(k.e); mpz_clear(k.d);
     mpz_clear(c);
+    if(N_str != NULL) free(N_str);
 
     return buff;
 }
@@ -371,7 +404,7 @@ int main(int argc, char* argv[]) {
         else{
             print_help();
         }
-        if(str != NULL) free(str);
+        //if(str != NULL) free(str);
     }
 
     return 0;
