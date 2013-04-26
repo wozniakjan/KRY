@@ -266,7 +266,7 @@ void gen_primes(Key* k, int bit_length) {
 
 //returns string in specified format for generation
 const char* generate(const char* B){
-    //number of bites of bites for modulus
+    //number of bites for modulus
     int b = atoi(B); 
    
     //string output
@@ -325,6 +325,7 @@ void get_random_seeds(uint32 *seed1, uint32 *seed2) {
 	(*seed2) = tmp_seed2 * ((uint32)40499 * 65543);
 }
 
+//factor modulus into P and Q
 void factor_integer(mpz_t p, mpz_t q, char* n){
     uint32 seed1, seed2;
     get_random_seeds(&seed1, &seed2);
@@ -359,6 +360,7 @@ void factor_integer(mpz_t p, mpz_t q, char* n){
     mpz_set_str(q, factor->number, 10); 
 }
 
+//returns string in specified format for breaking the weak 
 const char* crack(char* E, char* N, char* C){
     Key k;
     mpz_init(k.p); mpz_init(k.q); mpz_init(k.d);
@@ -425,7 +427,7 @@ int main(int argc, char* argv[]) {
         else{
             print_help();
         }
-        //if(str != NULL) free(str);
+        if(str != NULL) free(str);
     }
 
     return 0;

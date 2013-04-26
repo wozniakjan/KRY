@@ -5,11 +5,12 @@
 
 PROJ   = kry
 SRC    = src/
+MDIR   = src/msieve/
 FLAGS  = -std=c99 -Wall -pedantic -w -Isrc/msieve/include
 CC     = gcc
 LIBS   = -lgmp -lm -lpthread 
 MSIEVE = src/msieve/libmsieve.a
-M_FLAGS = -O3 -fomit-frame-pointer -march=core2 -D_FILE_OFFSET_BITS=64 -DNDEBUG -D_LARGEFILE64_SOURCE -Wall -W -DMSIEVE_SVN_VERSION="\"exported\"" -I. -Iinclude -Ignfs -Ignfs/poly -Ignfs/poly/stage1 -DNO_ZLIB
+M_FLAGS = -O3 -fomit-frame-pointer -march=core2 -D_FILE_OFFSET_BITS=64 -DNDEBUG -D_LARGEFILE64_SOURCE -Wall -W -DMSIEVE_SVN_VERSION="\"Unversioned directory\"" -I. -I$(MDIR)include -I$(MDIR)gnfs -I$(MDIR)gnfs/poly -I$(MDIR)gnfs/poly/stage1 -DNO_ZLIB
 
 ifeq ($(ECM),1)
 CFLAGS += -DHAVE_GMP_ECM
@@ -58,7 +59,7 @@ endif
 
 $(PROJ): $(SRC)main.c 
 	cd src/msieve && make all && cd -
-	$(CC) $(FLAGS) $(SRC)main.c -o $(PROJ) $(LIBS) $(MSIEVE) 
+	$(CC) $(FLAGS) $(M_FLAGS) $(SRC)main.c -o $(PROJ) $(LIBS) $(MSIEVE) 
 
 run: 
 	./kry -b 0x3 0x2f72f3e766a6ee4497ec836160e05363be3c0eb5adbdddb47 0x850e13a7c8826f9a8682f611dffe8cadd75e57a351ab9864 
@@ -69,4 +70,5 @@ pack:
 clean:
 	cd src/msieve && make clean && cd -
 	rm -rf kry
+	rm -rf msieve.dat
 	rm -rf *.o
