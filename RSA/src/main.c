@@ -144,7 +144,10 @@ void nextprime (mpz_t dst, mpz_t src){
 void init_random(){
 	gmp_randinit_default(random_state);
 	unsigned char buff[SEED_SIZE];
-    srand(time(NULL));
+    FILE* dev_urandom = fopen("/dev/urandom", "r");
+    uint32 dev_seed;
+    fread(&dev_seed, sizeof(uint32), 1, dev_urandom);
+    srand(dev_seed);
     for(int i=0; i<SEED_SIZE; i++){
         buff[i] = rand() % 0xFF;
     }
@@ -228,7 +231,7 @@ void gen_primes(Key* k, int bit_length) {
 
     mpz_t phi, tmp1, tmp2;
     mpz_init(phi); mpz_init(tmp1); mpz_init(tmp2);
-    int bytes_len_prime = bit_length/8;
+    int bytes_len_prime = bit_length/16;
 
 	//generate p
 	set_random(tmp1, bytes_len_prime);
@@ -283,8 +286,8 @@ const char* generate(const char* B){
     if(b >= 4){
         int len = b*5;
         return_values = (char*)malloc(sizeof(char)*(len)); 
-        //gmp_sprintf(return_values,"%Zd %Zd %Zd %Zd %Zd\n",k.p, k.q, k.n, k.e, k.d);
-        gmp_sprintf(return_values,"0x%Zx 0x%Zx 0x%Zx 0x%Zx 0x%Zx\n",k.p, k.q, k.n, k.e, k.d);
+        gmp_sprintf(return_values,"%Zd %Zd %Zd %Zd %Zd\n",k.p, k.q, k.n, k.e, k.d);
+        //gmp_sprintf(return_values,"0x%Zx 0x%Zx 0x%Zx 0x%Zx 0x%Zx\n",k.p, k.q, k.n, k.e, k.d);
     }
 
     //cleaning
@@ -312,7 +315,7 @@ const char* cipher(const char* E, const char* N, const char* M){
     return buff;
 }
 
-//sets random seeds
+//sets random seeds as suggested by msieve library
 void get_random_seeds(uint32 *seed1, uint32 *seed2) {
 	uint32 tmp_seed1, tmp_seed2;
     uint64 high_res_time = read_clock();
