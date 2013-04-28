@@ -156,13 +156,15 @@ void init_random(){
 	mpz_import(seed, SEED_SIZE, 1, sizeof(buff[0]), 0, 0, buff);
 
 	gmp_randseed(random_state, seed);
+
+	fclose(dev_urandom);
 }
 
 //sets random value
 void set_random(mpz_t val, int byte_count){
     unsigned char *buff = (unsigned char*)malloc(sizeof(unsigned char)*byte_count);
     for(int i=0; i<byte_count; i++){
-        buff[i] = rand() % 0xFF;//0x2B;//
+        buff[i] = rand() % 0xFF;
     }
 
     //heuristics for easier prime generation
@@ -286,8 +288,8 @@ const char* generate(const char* B){
     if(b >= 4){
         int len = b*5;
         return_values = (char*)malloc(sizeof(char)*(len)); 
-        gmp_sprintf(return_values,"%Zd %Zd %Zd %Zd %Zd\n",k.p, k.q, k.n, k.e, k.d);
-        //gmp_sprintf(return_values,"0x%Zx 0x%Zx 0x%Zx 0x%Zx 0x%Zx\n",k.p, k.q, k.n, k.e, k.d);
+        //gmp_sprintf(return_values,"%Zd %Zd %Zd %Zd %Zd\n",k.p, k.q, k.n, k.e, k.d);
+        gmp_sprintf(return_values,"0x%Zx 0x%Zx 0x%Zx 0x%Zx 0x%Zx\n",k.p, k.q, k.n, k.e, k.d);
     }
 
     //cleaning
@@ -332,7 +334,7 @@ void get_random_seeds(uint32 *seed1, uint32 *seed2) {
 void factor_integer(mpz_t p, mpz_t q, char* n){
     uint32 seed1, seed2;
     get_random_seeds(&seed1, &seed2);
-	uint32 flags;
+	uint32 flags = MSIEVE_FLAG_NFS_SIEVE;
 	uint32 max_relations = 0;
 	enum cpu_type cpu;
 	uint32 cache_size1, cache_size2;

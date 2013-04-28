@@ -65,7 +65,7 @@ run:
 	./kry -b 0x3 0x2f72f3e766a6ee4497ec836160e05363be3c0eb5adbdddb47 0x850e13a7c8826f9a8682f611dffe8cadd75e57a351ab9864 
 
 pack:
-	tar -zcvf xwozni00.tar.gz src/* Makefile dokumentace.pdf
+	tar -zcvf xwozni00.tar.gz src/* Makefile doc/dokumentace.pdf
 
 clean:
 	cd src/msieve && make clean && cd -

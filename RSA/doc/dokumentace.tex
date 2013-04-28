@@ -28,9 +28,35 @@ je demonstrována důležitost použití dostatečně dlouhých klíčů.
 
 \section{RSA}
 Algoritmus RSA spadá mezi asymetrické šifry. Je založen na předpokladu, že faktorizace --
-rozklad čísla na součín prvočísel, pro dostatečně velkou hodnotu je obtížná úloha.:
+rozklad čísla na součín prvočísel, pro dostatečně velkou hodnotu je obtížná úloha.
 \subsection*{Generování parametrů}
+Tato sekce se skládá z několika kroků:
+\begin{itemize}
+\item generuj dvě velká prvočísla $p$ a $q$
+\item $n = p \cdot q$
+\item $\phi(n) = (p-1) \cdot (q-1)$
+\item $e = 3$
+\item vypočti $d = inv(e, \phi(n))$
+\item veřejný klíč je dvojice $(e,n)$ a soukromý klíč je dvojice $(d,n)$
+\end{itemize}
+
+Pro generování čísel $p$ a $q$ je použita funkce \texttt{rand()} ze standardní knihovny, 
+inicializováno seedem z náhodné hodnoty ze souboru \texttt{/dev/urand}. Generované byty
+jsou zapsáný do bufferu o patřičné délce a ten je převeden na \texttt{mpz\_t} hodnotu.
+Aby bylo zajištěno, že p a q jsou s dostatečnou pravděpodobností prvočísla, je implementován
+Miller-Rabin test prvočíselnosti a při neúspěchu je hodnota inkrementována a opětovně testována.
+Modulární multiplikativní inverze je spočtena pomocí rozšířeného Eukleidova algoritmu.
+
 \subsection*{Šifrování a dešifrování}
+Jelikož na vstupu je očekávána konkrétní číselná hodnota pro šifrování a dešifrování,
+není implementován žádný algoritmus pro zpracování vstupního řetězce jako např. PKCS \#1 v1.5.
+Vstupní hodnota je jen vynásobena
+\begin{itemize}
+\item šifrování $c = m^e (mod n)$
+\item dešifrování $m = c^d (mod n)$
+\end{itemize}
+
+Modulární násobení je implementováno pomocí algoritmu \textit{Montgomery Powering Ladder}.
 
 \section{Prolomení slabého veřejného modulu}
 
