@@ -167,8 +167,9 @@ void set_random(mpz_t val, int byte_count){
         buff[i] = rand() % 0xFF;
     }
 
-    //heuristics for easier prime generation
+    //masks for easier prime generation
     buff[0] |= 0xC0;
+    buff[0] &= 0xDF;
     buff[byte_count-1] |= 0x01;
 
     //set the buffer as integer
@@ -334,7 +335,7 @@ void get_random_seeds(uint32 *seed1, uint32 *seed2) {
 void factor_integer(mpz_t p, mpz_t q, char* n){
     uint32 seed1, seed2;
     get_random_seeds(&seed1, &seed2);
-	uint32 flags = MSIEVE_FLAG_NFS_SIEVE;
+	uint32 flags = MSIEVE_FLAG_NFS_SIEVE | MSIEVE_DEFAULT_FLAGS;
 	uint32 max_relations = 0;
 	enum cpu_type cpu;
 	uint32 cache_size1, cache_size2;
