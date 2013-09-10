@@ -60,90 +60,90 @@ void print_help(){
 
 //Montgomery ladder
 void powm(mpz_t dst, mpz_t b, mpz_t e, mpz_t m){
-	unsigned long int k = mpz_sizeinbase (e, 2); 
-	mpz_t x1, x2;
-	mpz_init(x1); mpz_init(x2);
-	mpz_set(x1,b); mpz_pow_ui(x2,b,2);
-	int ni;
+    unsigned long int k = mpz_sizeinbase (e, 2); 
+    mpz_t x1, x2;
+    mpz_init(x1); mpz_init(x2);
+    mpz_set(x1,b); mpz_pow_ui(x2,b,2);
+    int ni;
 
-	for(unsigned long int i=k-2; i>0; i--){
-		ni = mpz_tstbit(e,i);
-		if(ni == 0){
-			mpz_mul(x2,x1,x2);
-			mpz_mul(x1,x1,x1);
-		} else {
-			mpz_mul(x1, x1, x2);
-			mpz_mul(x2, x2, x2);
-		}
-		mpz_mod(x1,x1,m);
-		mpz_mod(x2,x2,m);
-	}
-	//and for i == 0 last loop
-	ni = mpz_tstbit(e,0);
-	if(ni == 0){
-		mpz_mul(x1,x1,x1);
-	} else {
-		mpz_mul(x1, x1, x2);
-	}
-	mpz_mod(dst,x1,m);
+    for(unsigned long int i=k-2; i>0; i--){
+        ni = mpz_tstbit(e,i);
+        if(ni == 0){
+            mpz_mul(x2,x1,x2);
+            mpz_mul(x1,x1,x1);
+        } else {
+            mpz_mul(x1, x1, x2);
+            mpz_mul(x2, x2, x2);
+        }
+        mpz_mod(x1,x1,m);
+        mpz_mod(x2,x2,m);
+    }
+    //and for i == 0 last loop
+    ni = mpz_tstbit(e,0);
+    if(ni == 0){
+        mpz_mul(x1,x1,x1);
+    } else {
+        mpz_mul(x1, x1, x2);
+    }
+    mpz_mod(dst,x1,m);
 }
 
 //Miller Rabin test for probable primality
 int millerrabin (mpz_t n, int k) {
-	unsigned long int s = 0;
-	mpz_t d, a, r_max, x, n1;
-	mpz_init(d); mpz_init(a); mpz_init(r_max); mpz_init(x); mpz_init(n1); 
-	mpz_sub_ui(r_max,n,4);
+    unsigned long int s = 0;
+    mpz_t d, a, r_max, x, n1;
+    mpz_init(d); mpz_init(a); mpz_init(r_max); mpz_init(x); mpz_init(n1); 
+    mpz_sub_ui(r_max,n,4);
 
-	mpz_sub_ui(n1,n,1);	
-	mpz_set(d,n1); 
+    mpz_sub_ui(n1,n,1);	
+    mpz_set(d,n1); 
 
-	//n-1 = 2^s * d
-	do{	
-		mpz_tdiv_q_2exp(d, d, 1);
-		s++;
-	} while(mpz_even_p(d));
+    //n-1 = 2^s * d
+    do{	
+        mpz_tdiv_q_2exp(d, d, 1);
+        s++;
+    } while(mpz_even_p(d));
 
-	int loop;
-	for(int i = 0; i<k; i++){
-		loop = 0;
-		//a in <2; n-2>
-		mpz_urandomm(a, random_state, r_max);
-		mpz_add_ui(a,a,2);
+    int loop;
+    for(int i = 0; i<k; i++){
+        loop = 0;
+        //a in <2; n-2>
+        mpz_urandomm(a, random_state, r_max);
+        mpz_add_ui(a,a,2);
 
-		POWM(x, a, d, n);	
-		if(mpz_cmp_ui(x,1) == 0 || mpz_cmp(x,n1) == 0)
-			continue;
+        POWM(x, a, d, n);	
+        if(mpz_cmp_ui(x,1) == 0 || mpz_cmp(x,n1) == 0)
+            continue;
 
-		for(unsigned long int r = 1; r<s-1; r++){
-			mpz_mul(x, x, x);
-			mpz_mod(x, x, n);
-			if(mpz_cmp_ui(x,1) == 0){
-				return 0;
-			}	
-			if(mpz_cmp(x,n1) == 0){
-				loop = 1;
-				break;
-			}
-		}
-		if(loop == 0)
-			return 0;
-	}
-	return 1;
+        for(unsigned long int r = 1; r<s-1; r++){
+            mpz_mul(x, x, x);
+            mpz_mod(x, x, n);
+            if(mpz_cmp_ui(x,1) == 0){
+                return 0;
+            }	
+            if(mpz_cmp(x,n1) == 0){
+                loop = 1;
+                break;
+            }
+        }
+        if(loop == 0)
+            return 0;
+    }
+    return 1;
 }
 
 //gets next prime number from certain number
 void nextprime (mpz_t dst, mpz_t src){
-	mpz_add_ui(dst, src, 2);
-	while(!mpz_millerrabin(dst,20)){
-		mpz_add_ui(dst,dst,2);
-	}
+    mpz_add_ui(dst, src, 2);
+    while(!mpz_millerrabin(dst,20)){
+        mpz_add_ui(dst,dst,2);
+    }
 }
 
 //initialize random generators
 void init_random(){
-	gmp_randinit_default(random_state);
-	unsigned char buff[SEED_SIZE];
+    gmp_randinit_default(random_state);
+    unsigned char buff[SEED_SIZE];
     FILE* dev_urandom = fopen("/dev/urandom", "r");
     uint32 dev_seed;
     fread(&dev_seed, sizeof(uint32), 1, dev_urandom);
@@ -152,12 +152,12 @@ void init_random(){
         buff[i] = rand() % 0xFF;
     }
 
-	mpz_t seed; mpz_init(seed);
-	mpz_import(seed, SEED_SIZE, 1, sizeof(buff[0]), 0, 0, buff);
+    mpz_t seed; mpz_init(seed);
+    mpz_import(seed, SEED_SIZE, 1, sizeof(buff[0]), 0, 0, buff);
 
-	gmp_randseed(random_state, seed);
+    gmp_randseed(random_state, seed);
 
-	fclose(dev_urandom);
+    fclose(dev_urandom);
 }
 
 //sets random value
@@ -174,70 +174,70 @@ void set_random(mpz_t val, int byte_count){
 
     //set the buffer as integer
     mpz_import(val, byte_count, 1, sizeof(buff[0]), 0, 0, buff);
-	free(buff);
+    free(buff);
 }
 
 //soulution for g = ax + by -- modular multiplicative inverse 
 void extend_gcd(mpz_t x, mpz_t a, mpz_t b){
-	mpz_t y, last_x, last_y, q, tmp_a, tmp_b, tmp;
-	mpz_init(y); mpz_init(last_x); mpz_init(last_y); mpz_init(q); mpz_init(tmp);
-	mpz_init(tmp_a); mpz_set(tmp_a, a); mpz_init(tmp_b); mpz_set(tmp_b, b);
-	
-	mpz_set_ui(x,0); mpz_set_ui(y,1); mpz_set_ui(last_x, 1); mpz_set_ui(last_y, 0);
-	while(mpz_cmp_ui(tmp_b,0) != 0){
-		//q = a div b
-		mpz_div(q, tmp_a, tmp_b);
-		
-		//(a,b) = (b, a mod b)
-		mpz_set(tmp, tmp_a);
-		mpz_set(tmp_a, tmp_b);
-		mpz_mod(tmp_b, tmp, tmp_b);
+    mpz_t y, last_x, last_y, q, tmp_a, tmp_b, tmp;
+    mpz_init(y); mpz_init(last_x); mpz_init(last_y); mpz_init(q); mpz_init(tmp);
+    mpz_init(tmp_a); mpz_set(tmp_a, a); mpz_init(tmp_b); mpz_set(tmp_b, b);
 
-		//(x, lastx) = (lastx - q*x, x)
-		mpz_mul(tmp, q, x);
-		mpz_sub(tmp, last_x, tmp);
-		mpz_set(last_x, x);
-		mpz_set(x, tmp);
+    mpz_set_ui(x,0); mpz_set_ui(y,1); mpz_set_ui(last_x, 1); mpz_set_ui(last_y, 0);
+    while(mpz_cmp_ui(tmp_b,0) != 0){
+        //q = a div b
+        mpz_div(q, tmp_a, tmp_b);
 
-		//(y, lasty) = (lasty - q*y, y)
-		mpz_mul(tmp, q, y);
-		mpz_sub(tmp, last_y, tmp);
-		mpz_set(last_y, y);
-		mpz_set(y, tmp);
-	}	
+        //(a,b) = (b, a mod b)
+        mpz_set(tmp, tmp_a);
+        mpz_set(tmp_a, tmp_b);
+        mpz_mod(tmp_b, tmp, tmp_b);
 
-	mpz_set(x, last_x);
-	mpz_set(y, last_y);
+        //(x, lastx) = (lastx - q*x, x)
+        mpz_mul(tmp, q, x);
+        mpz_sub(tmp, last_x, tmp);
+        mpz_set(last_x, x);
+        mpz_set(x, tmp);
+
+        //(y, lasty) = (lasty - q*y, y)
+        mpz_mul(tmp, q, y);
+        mpz_sub(tmp, last_y, tmp);
+        mpz_set(last_y, y);
+        mpz_set(y, tmp);
+    }	
+
+    mpz_set(x, last_x);
+    mpz_set(y, last_y);
 }
 
 //sets the multiplicative inverse
 void invert(mpz_t dst, mpz_t x, mpz_t n){
-	mpz_t gcd, tmp;
-	mpz_init(gcd); mpz_init(tmp); 
+    mpz_t gcd, tmp;
+    mpz_init(gcd); mpz_init(tmp); 
 
-	extend_gcd(tmp, x, n);
+    extend_gcd(tmp, x, n);
 
-	if(tmp->_mp_size >= 0){
-		mpz_set(dst,tmp);
-	}else{
-		if(n->_mp_size >= 0){
-			mpz_add(dst, tmp, n);
-		}else{
-			mpz_sub(dst, tmp, n);
-		}
-	}
+    if(tmp->_mp_size >= 0){
+        mpz_set(dst,tmp);
+    }else{
+        if(n->_mp_size >= 0){
+            mpz_add(dst, tmp, n);
+        }else{
+            mpz_sub(dst, tmp, n);
+        }
+    }
 }
 
 //generate random primes p, q into Key
 void gen_primes(Key* k, int bit_length) {
-	init_random();
+    init_random();
 
     mpz_t phi, tmp1, tmp2;
     mpz_init(phi); mpz_init(tmp1); mpz_init(tmp2);
     int bytes_len_prime = bit_length/16;
 
-	//generate p
-	set_random(tmp1, bytes_len_prime);
+    //generate p
+    set_random(tmp1, bytes_len_prime);
     NEXTPRIME(k->p, tmp1);
 
     mpz_mod(tmp2, k->p, k->e);
@@ -247,7 +247,7 @@ void gen_primes(Key* k, int bit_length) {
     }
 
     //generate q
-	set_random(tmp1, bytes_len_prime); 
+    set_random(tmp1, bytes_len_prime); 
     NEXTPRIME(k->q, tmp1);
     mpz_mod(tmp2, k->q, k->e);
     while(!mpz_cmp_ui(tmp2, 1)){
@@ -265,7 +265,7 @@ void gen_primes(Key* k, int bit_length) {
 
     // d = multiplicative_inverse(e mod phi)
     INVERT(k->d, k->e, phi);
-	
+
     //cleaning
     mpz_clear(phi); mpz_clear(tmp1); mpz_clear(tmp2);
 }
@@ -274,17 +274,17 @@ void gen_primes(Key* k, int bit_length) {
 const char* generate(const char* B){
     //number of bites for modulus
     int b = atoi(B); 
-   
+
     //string output
     char *return_values;
-    
+
     //random prime numbers p,q; modulus n; pub exponent e; priv exp d
     Key k;
     mpz_init(k.p); mpz_init(k.q); mpz_init(k.n); mpz_init(k.e); mpz_init(k.d);
     mpz_set_ui(k.e, 3);
 
     gen_primes(&k, b);
-   
+
     //transforming generated values to output string
     if(b >= 4){
         int len = b*5;
@@ -295,7 +295,7 @@ const char* generate(const char* B){
 
     //cleaning
     mpz_clear(k.p); mpz_clear(k.q); mpz_clear(k.n); mpz_clear(k.e); mpz_clear(k.d);
-    
+
     return return_values;
 }
 
@@ -320,30 +320,30 @@ const char* cipher(const char* E, const char* N, const char* M){
 
 //sets random seeds as suggested by msieve library
 void get_random_seeds(uint32 *seed1, uint32 *seed2) {
-	uint32 tmp_seed1, tmp_seed2;
+    uint32 tmp_seed1, tmp_seed2;
     uint64 high_res_time = read_clock();
     tmp_seed1 = ((uint32)(high_res_time >> 32) ^
-             (uint32)time(NULL)) * 
-             (uint32)getpid();
+            (uint32)time(NULL)) * 
+        (uint32)getpid();
     tmp_seed2 = (uint32)high_res_time;
 
-	(*seed1) = tmp_seed1 * ((uint32)40499 * 65543);
-	(*seed2) = tmp_seed2 * ((uint32)40499 * 65543);
+    (*seed1) = tmp_seed1 * ((uint32)40499 * 65543);
+    (*seed2) = tmp_seed2 * ((uint32)40499 * 65543);
 }
 
 //factor modulus into P and Q
 void factor_integer(mpz_t p, mpz_t q, char* n){
     uint32 seed1, seed2;
     get_random_seeds(&seed1, &seed2);
-	uint32 flags = MSIEVE_FLAG_NFS_SIEVE | MSIEVE_DEFAULT_FLAGS;
-	uint32 max_relations = 0;
-	enum cpu_type cpu;
-	uint32 cache_size1, cache_size2;
-	uint32 num_threads = 0;
-	uint32 which_gpu;
-	const char *nfs_args = NULL;
-	
-	msieve_obj* factorization = msieve_obj_new(n, flags,
+    uint32 flags = MSIEVE_FLAG_NFS_SIEVE | MSIEVE_DEFAULT_FLAGS;
+    uint32 max_relations = 0;
+    enum cpu_type cpu;
+    uint32 cache_size1, cache_size2;
+    uint32 num_threads = 0;
+    uint32 which_gpu;
+    const char *nfs_args = NULL;
+
+    msieve_obj* factorization = msieve_obj_new(n, flags,
             NULL, NULL, NULL,
             seed1, seed2, max_relations,
             cpu, cache_size1, cache_size2,
@@ -354,9 +354,9 @@ void factor_integer(mpz_t p, mpz_t q, char* n){
         return;
     }
 
-	msieve_run(factorization);
+    msieve_run(factorization);
 
-	if (!(factorization->flags & MSIEVE_FLAG_FACTORIZATION_DONE)) {
+    if (!(factorization->flags & MSIEVE_FLAG_FACTORIZATION_DONE)) {
         return;
     }
 
@@ -381,12 +381,12 @@ const char* crack(char* E, char* N, char* C){
     gmp_sprintf(N_str, "%Zd", k.n);
 
     factor_integer(k.p, k.q, N_str);
-    
+
     // phi(n) = (p-1)*(q-1)
     mpz_sub_ui(tmp1, k.p, 1);
     mpz_sub_ui(tmp2, k.q, 1);
     mpz_mul(phi, tmp1, tmp2);
-    
+
     // d = multiplicative_inverse(e mod phi)
     INVERT(k.d, k.e, phi);
 
